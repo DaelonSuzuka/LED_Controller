@@ -21,21 +21,46 @@ void fadeall() {
     }
 }
 
-void loop() {
-    static uint8_t hue = 0;
-    Serial.print("x");
-    for (int i = 0; i < NUM_LEDS; i++) {
-        leds[i] = CHSV(hue++, 255, 255);
-        FastLED.show();
-        fadeall();
-        delay(10);
-    }
-    Serial.print("x");
+#define UPDATE_PERIOD 10
 
-    for (int i = (NUM_LEDS)-1; i >= 0; i--) {
-        leds[i] = CHSV(hue++, 255, 255);
-        FastLED.show();
-        fadeall();
-        delay(10);
+void update() {
+    static uint8_t hue = 0;
+    static int16_t i = 0;
+    static int16_t direction = 1;
+    static uint32_t lastUpdate = 0;
+
+    uint32_t currentTime = millis();
+    if (currentTime < (lastUpdate + UPDATE_PERIOD)) {
+        return;
+    }
+    lastUpdate = currentTime;
+
+    leds[i] = CHSV(hue++, 255, 255);
+    FastLED.show();
+    fadeall();
+
+    i += direction;
+
+    if (i == NUM_LEDS) {
+        direction = -1;
+    }
+    if (i == 0) {
+        direction = 1;
+    }
+}
+
+uint8_t updating = 0;
+
+void loop() {
+    if (Serial.available()) {
+        char c = Serial.read();
+
+        if (c == 'x') {
+            updating = !updating;
+        }
+    }
+
+    if (updating) {
+        update(); //
     }
 }
